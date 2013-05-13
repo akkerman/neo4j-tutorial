@@ -41,7 +41,13 @@ public class Koan02
     {
         Node node = null;
 
-        // YOUR CODE GOES HERE
+        Transaction tx = db.beginTx();
+        try {
+            node = db.createNode();
+            tx.success();
+        } finally {
+            tx.finish();
+        }
 
         assertTrue( databaseHelper.nodeExistsInDatabase( node ) );
     }
@@ -52,6 +58,15 @@ public class Koan02
         Node theDoctor = null;
 
         // YOUR CODE GOES HERE
+        Transaction tx = db.beginTx();
+        try {
+            theDoctor = db.createNode();
+            theDoctor.setProperty("firstname", "William");
+            theDoctor.setProperty("lastname", "Hartnell");
+            tx.success();
+        } finally {
+            tx.finish();
+        }
 
         assertTrue( databaseHelper.nodeExistsInDatabase( theDoctor ) );
 
@@ -68,6 +83,15 @@ public class Koan02
         Relationship companionRelationship = null;
 
         // YOUR CODE GOES HERE
+        Transaction tx = db.beginTx();
+        try {
+            theDoctor = db.createNode();
+            susan = db.createNode();
+            companionRelationship = susan.createRelationshipTo(theDoctor, DoctorWhoRelationships.COMPANION_OF);
+            tx.success();
+        } finally {
+            tx.finish();
+        }
 
         Relationship storedCompanionRelationship = db.getRelationshipById( companionRelationship.getId() );
         assertNotNull( storedCompanionRelationship );
@@ -83,6 +107,17 @@ public class Koan02
         Node captainKirk = createPollutedDatabaseContainingStarTrekReferences();
 
         // YOUR CODE GOES HERE
+        Transaction tx = db.beginTx();
+        try {
+            for (Relationship relationship : captainKirk.getRelationships()) {
+                relationship.delete();
+            }
+
+            captainKirk.delete();
+            tx.success();
+        } finally {
+            tx.finish();
+        }
 
         try
         {
@@ -103,6 +138,15 @@ public class Koan02
         Node susan = createInaccurateDatabaseWhereSusanIsEnemyOfTheDoctor();
 
         // YOUR CODE GOES HERE
+        Transaction tx = db.beginTx();
+        try {
+            for (Relationship relationship : susan.getRelationships(DoctorWhoRelationships.ENEMY_OF)) {
+                relationship.delete();
+            }
+            tx.success();
+        } finally {
+            tx.finish();
+        }
 
         assertEquals( 1, databaseHelper.destructivelyCountRelationships( susan.getRelationships() ) );
     }
