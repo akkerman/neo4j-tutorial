@@ -1,20 +1,18 @@
 package org.neo4j.tutorial;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.tutorial.matchers.ContainsOnlySpecificActors.containsOnlyActors;
-import static org.neo4j.tutorial.matchers.ContainsSpecificNumberOfNodes.containsNumberOfNodes;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
-import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+
+import static org.junit.Assert.assertThat;
+import static org.neo4j.tutorial.matchers.ContainsOnlySpecificActors.containsOnlyActors;
+import static org.neo4j.tutorial.matchers.ContainsSpecificNumberOfNodes.containsNumberOfNodes;
 
 /**
  * In this Koan we start using the new traversal framework to find interesting
@@ -41,23 +39,40 @@ public class Koan07
     public void shouldDiscoverHowManyDoctorActorsHaveParticipatedInARegeneration() throws Exception
     {
         Node theDoctor = universe.theDoctor();
-        TraversalDescription regeneratedActors = null;
+        TraversalDescription regeneratedActors;
 
         // YOUR CODE GOES HERE
         // Note: every doctor has participated in a regeneration, including the first and last Doctors
+        regeneratedActors = Traversal.description()
+                .relationships(DoctorWhoRelationships.PLAYED, Direction.INCOMING)
+                .depthFirst()
+                .uniqueness(Uniqueness.NODE_GLOBAL)
+                .evaluator((path) -> Evaluation.ofIncludes(path.endNode().hasRelationship(DoctorWhoRelationships.REGENERATED_TO)));
 
 
-        assertThat( regeneratedActors.traverse( theDoctor ).nodes(), containsNumberOfNodes( 11 ) );
+
+
+        assertThat(regeneratedActors.traverse(theDoctor).nodes(), containsNumberOfNodes(11));
     }
 
     @Test
     public void shouldFindTheFirstDoctor()
     {
         Node theDoctor = universe.theDoctor();
-        TraversalDescription firstDoctor = null;
+        TraversalDescription firstDoctor = Traversal.description()
+                .relationships(DoctorWhoRelationships.PLAYED, Direction.INCOMING)
+                .depthFirst()
+                .uniqueness(Uniqueness.NODE_GLOBAL)
+                .evaluator((path) -> {
+                        Node node = path.endNode();
+                        boolean isActor = node.hasProperty("actor");
+                        boolean isRegeneratedTo = node.hasRelationship(DoctorWhoRelationships.REGENERATED_TO, Direction.INCOMING);
+                        boolean isRegeneratedFrom = node.hasRelationship(DoctorWhoRelationships.REGENERATED_TO, Direction.OUTGOING);
+                        boolean isFirstDoctor = isActor && !isRegeneratedTo && isRegeneratedFrom;
 
-        // YOUR CODE GOES HERE
+                        return Evaluation.ofIncludes(isFirstDoctor);
+                });
 
-        assertThat( firstDoctor.traverse( theDoctor ).nodes(), containsOnlyActors( "William Hartnell" ) );
+        assertThat(firstDoctor.traverse(theDoctor).nodes(), containsOnlyActors("William Hartnell"));
     }
 }
