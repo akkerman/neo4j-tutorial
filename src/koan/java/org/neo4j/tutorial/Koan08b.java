@@ -1,12 +1,5 @@
 package org.neo4j.tutorial;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.tutorial.matchers.ContainsOnlySpecificTitles.containsOnlyTitles;
-
-import java.util.Iterator;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,6 +7,13 @@ import org.neo4j.cypher.ExecutionEngine;
 import org.neo4j.cypher.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.tutorial.matchers.ContainsOnlySpecificTitles.containsOnlyTitles;
 
 /**
  * In this Koan we learn the basics of the Cypher query language, focusing on the
@@ -40,7 +40,7 @@ public class Koan08b
     public void shouldFindAndReturnTheDoctor()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "START doctor = node:characters(character='Doctor') return doctor";
 
         // YOUR CODE GOES HERE
 
@@ -58,7 +58,7 @@ public class Koan08b
         // 218a and 218b as their episode numbers seemingly just to be difficult!
 
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start episodes = node:episodes('episode:*') return episodes";
 
         // YOUR CODE GOES HERE
 
@@ -72,7 +72,7 @@ public class Koan08b
     public void shouldFindAllTheEpisodesInWhichTheCybermenAppeared() throws Exception
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start c = node:species(species='Cyberman') MATCH (c)-[:APPEARED_IN]->episode return episode";
 
         // YOUR CODE GOES HERE
 
@@ -99,7 +99,11 @@ public class Koan08b
     public void shouldFindEpisodesWhereTennantAndRoseBattleTheDaleks() throws Exception
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start ";
+        cql+= "tennant=node:actors(actor='David Tennant'), rose=node:characters(character='Rose Tyler'), daleks=node:species(species='Dalek')";
+        cql+=  "match ";
+        cql+= "(tennant)-[:APPEARED_IN]->(episode), (rose)-[:APPEARED_IN]->(episode), (daleks)-[:APPEARED_IN]->(episode)";
+        cql+= " return episode";
 
         // YOUR CODE GOES HERE
 
@@ -115,7 +119,11 @@ public class Koan08b
     public void shouldFindIndividualCompanionsAndEnemiesOfTheDoctor()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = "";
+        String cql = " start ";
+        cql+="doctor=node:characters(character='Doctor')";
+        cql+=" match ";
+        cql+="(eoc)-[:ENEMY_OF|COMPANION_OF]->(doctor) where has(eoc.character)";
+        cql+="return distinct eoc";
 
         // YOUR CODE GOES HERE
 

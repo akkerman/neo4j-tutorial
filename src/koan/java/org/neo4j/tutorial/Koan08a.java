@@ -1,12 +1,12 @@
 package org.neo4j.tutorial;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import org.junit.Test;
 import org.neo4j.cypher.ExecutionEngine;
 import org.neo4j.cypher.ExecutionResult;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * In this Koan we learn how to create, update, and delete nodes and relationships in the
@@ -18,7 +18,7 @@ public class Koan08a
     public void shouldCreateASingleNode()
     {
         ExecutionEngine engine = new ExecutionEngine( DatabaseHelper.createDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "CREATE n";
 
         // YOUR CODE GOES HERE
 
@@ -34,7 +34,7 @@ public class Koan08a
     public void shouldCreateASingleNodeWithSomeProperties()
     {
         ExecutionEngine engine = new ExecutionEngine( DatabaseHelper.createDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "create person = {firstname:'Tom', lastname: 'Baker'}";
 
         // YOUR CODE GOES HERE
 
@@ -50,7 +50,10 @@ public class Koan08a
     public void shouldCreateASimpleConnectedGraph()
     {
         ExecutionEngine engine = new ExecutionEngine( DatabaseHelper.createDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "create " +
+                "doctor = {character: 'Doctor'}," +
+                "master = {character: 'Master'}," +
+                "master-[:ENEMY_OF]->doctor";
 
         // YOUR CODE GOES HERE
 
