@@ -1,5 +1,19 @@
 package org.neo4j.tutorial;
 
+import junit.framework.Assert;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.neo4j.cypher.ExecutionEngine;
+import org.neo4j.cypher.ExecutionResult;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -7,18 +21,6 @@ import static org.junit.matchers.JUnitMatchers.hasItems;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.tutorial.matchers.ContainsOnlySpecificStrings.containsOnlySpecificStrings;
 import static org.neo4j.tutorial.matchers.ContainsWikipediaEntries.containsOnlyWikipediaEntries;
-
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.cypher.ExecutionEngine;
-import org.neo4j.cypher.ExecutionResult;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * In this Koan we focus on aggregate functions from the Cypher graph pattern matching language
@@ -41,10 +43,14 @@ public class Koan08c
     }
 
     @Test
-    public void shouldReturnAnyWikpediaEntriesForCompanions()
+    public void shouldReturnAnyWikipediaEntriesForCompanions()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = " start ";
+        cql+="doctor=node:characters(character='Doctor')";
+        cql+=" match ";
+        cql+="(companion)-[:COMPANION_OF]->(doctor) where has(companion.wikipedia)";
+        cql+="return distinct companion.wikipedia";
 
         // YOUR CODE GOES HERE
 
@@ -61,7 +67,7 @@ public class Koan08c
     public void shouldCountTheNumberOfActorsKnownToHavePlayedTheDoctor()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start doc=node:characters(character='Doctor') match (actor)-[:PLAYED]->(doc) return count(actor) as numberOfActorsWhoPlayedTheDoctor";
 
         // YOUR CODE GOES HERE
 
@@ -75,7 +81,9 @@ public class Koan08c
     public void shouldFindEarliestAndLatestRegenerationYears()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start " +
+                "doc=node:characters(character='Doctor') match ()-[regen:REGENERATED_TO]->()-[:PLAYED]->(doc) " +
+                "return min(regen.year) as earliest, max(regen.year) as latest";
 
         // YOUR CODE GOES HERE
 
@@ -91,7 +99,9 @@ public class Koan08c
     public void shouldFindTheEarliestEpisodeWhereFreemaAgyemanAndDavidTennantWorkedTogether() throws Exception
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start fa=node:actors(actor='Freema Agyeman'),dt=node:actors(actor='David Tennant')" +
+                " match fa-[:PLAYED]->()-[:APPEARED_IN]->(episode)<-[:APPEARED_IN]-dt" +
+                " return min(episode.episode) as earliest";
 
         // YOUR CODE GOES HERE
 
@@ -100,11 +110,37 @@ public class Koan08c
         assertEquals( "179", result.javaColumnAs( "earliest" ).next() );
     }
 
+
+    @Ignore
+    @Test
+    public void listEpisodesWhereActorAppearedIn() {
+        ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
+        String cql = "start actor=node:actors(actor='David Tennant')" +
+                " match actor-[:PLAYED]->()-[:APPEARED_IN]->(episode)" +
+                " return episode.title";
+
+
+
+        ExecutionResult result = engine.execute( cql );
+
+        System.err.println("Printing episodes:");
+        int i = 0;
+        for(Iterator<Object> iterator = result.javaColumnAs("episode.title"); iterator.hasNext(); ) {
+            System.err.println("episode: "+iterator.next());
+            i++;
+        }
+
+        Assert.assertTrue(i>0);
+    }
+
+
     @Test
     public void shouldFindAverageSalaryOfActorsWhoPlayedTheDoctor()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start doc=node:characters(character='Doctor') match (actor)-[:PLAYED]->(doc)" +
+                "where has(actor.salary)" +
+                "return avg(actor.salary) as cash";
 
         // YOUR CODE GOES HERE
 
@@ -117,7 +153,10 @@ public class Koan08c
     public void shouldListTheEnemySpeciesAndCharactersForEachEpisodeWithPeterDavisonOrderedByIncreasingEpisodeNumber()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start peter=node:actors(actor='Peter Davison'),doc=node:characters(character='Doctor') " +
+                "match (peter)-[:APPEARED_IN]->(episode)<-[:APPEARED_IN]-(enemy)-[:ENEMY_OF]->(doc) " +
+                "return episode.episode,episode.title, collect(enemy.species?) as species,collect(enemy.character?) as characters " +
+                "order by episode.episode";
 
         // YOUR CODE GOES HERE
 
@@ -134,7 +173,11 @@ public class Koan08c
     public void shouldFindTheEnemySpeciesThatRoseTylerFought()
     {
         ExecutionEngine engine = new ExecutionEngine( universe.getDatabase(), StringLogger.DEV_NULL );
-        String cql = null;
+        String cql = "start " +
+                " rose=node:characters(character='Rose Tyler')," +
+                " doc=node:characters(character='Doctor') " +
+                "match (rose)-[:APPEARED_IN]->(episode)<-[:APPEARED_IN]-(enemy)-[:ENEMY_OF]->(doc) " +
+                "return distinct(enemy.species?) as enemySpecies";
 
         // YOUR CODE GOES HERE
 
