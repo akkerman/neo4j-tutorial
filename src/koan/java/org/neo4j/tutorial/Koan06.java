@@ -1,23 +1,22 @@
 package org.neo4j.tutorial;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.traversal.*;
+import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.kernel.Traversal;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+//import org.neo4j.graphdb.Traverser;
 
 /**
  * In this Koan we start using the simple traversal framework to find
@@ -46,9 +45,20 @@ public class Koan06
         Node theDoctor = universe.theDoctor();
         Traverser t = null;
 
-        // YOUR CODE GOES HERE
 
-        Collection<Node> foundCompanions = t.getAllNodes();
+
+        // YOUR CODE GOES HERE
+        TraversalDescription td = Traversal.description()
+                .depthFirst()
+                .relationships(DoctorWhoRelationships.COMPANION_OF, Direction.INCOMING)
+                .evaluator(Evaluators.toDepth(1))
+                .evaluator(Evaluators.excludeStartPosition())
+                ;
+        t = td.traverse(theDoctor);
+
+        Collection<Node> foundCompanions = new HashSet<Node>();
+        for (Node node : t.nodes())
+            foundCompanions.add(node);
 
         int knownNumberOfCompanions = 47;
         assertEquals( knownNumberOfCompanions, foundCompanions.size() );
@@ -62,11 +72,27 @@ public class Koan06
                 .forNodes( "species" )
                 .get( "species", "Dalek" )
                 .getSingle();
-        Traverser t = null;
 
-        // YOUR CODE GOES HERE
+        TraversalDescription td = Traversal.description()
+                .depthFirst()
+                .relationships(DoctorWhoRelationships.APPEARED_IN)
+                .relationships(DoctorWhoRelationships.USED_IN)
+                .relationships(DoctorWhoRelationships.MEMBER_OF)
+                .evaluator(new Evaluator() {
+                    @Override
+                    public Evaluation evaluate(Path propertyContainers) {
+                        if (propertyContainers.endNode().hasProperty("prop"))
+                            return Evaluation.INCLUDE_AND_PRUNE;
+                        return Evaluation.EXCLUDE_AND_CONTINUE;
+                    }
+                });
 
-        assertCollectionContainsAllDalekProps( t.getAllNodes() );
+
+        Collection<Node> nodes = new HashSet<Node>();
+        for (Node node : td.traverse(theDaleks).nodes()) {
+            nodes.add(node);
+        }
+        assertCollectionContainsAllDalekProps( nodes );
     }
 
     private void assertCollectionContainsAllDalekProps( Collection<Node> nodes )
@@ -100,12 +126,41 @@ public class Koan06
                 .forNodes( "characters" )
                 .get( "character", "Master" )
                 .getSingle();
-        Traverser t = null;
+
+
+        TraversalDescription td = Traversal.description()
+                .depthFirst()
+                .relationships(DoctorWhoRelationships.APPEARED_IN, Direction.OUTGOING)
+                .evaluator(new Evaluator() {
+                    @Override
+                    public Evaluation evaluate(Path propertyContainers) {
+                        Node episode = propertyContainers.endNode();
+                        for (Relationship relationship : episode.getRelationships(DoctorWhoRelationships.APPEARED_IN, Direction.INCOMING)) {
+                            Node appearee =  relationship.getStartNode();
+                            if ( appearee.hasProperty("actor") &&
+                                    "David Tennant".equals(appearee.getProperty("actor")))
+                                return Evaluation.INCLUDE_AND_PRUNE;
+                        }
+
+                        return Evaluation.EXCLUDE_AND_CONTINUE;
+                    }
+                });
+
+
+        Traverser t = td.traverse(theMaster);
+
+
+
+
+
 
         // YOUR CODE GOES HERE
+        Collection<Node> nodes= new HashSet<Node>();
+        for (Node node : t.nodes()) {
+            nodes.add(node);
+        }
 
         int numberOfEpisodesWithTennantVersusTheMaster = 4;
-        assertEquals( numberOfEpisodesWithTennantVersusTheMaster, t.getAllNodes()
-                .size() );
+        assertEquals(numberOfEpisodesWithTennantVersusTheMaster, nodes.size());
     }
 }
